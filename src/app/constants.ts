@@ -1,6 +1,5 @@
 // const BASE_API_URL = "http://localhost:3000";
-const BASE_API_URL =
-  "https://expense-tracking-4wcqgk4by-jaimansonis-projects.vercel.app";
+const BASE_API_URL = "https://expense-tracking-flax.vercel.app";
 
 export const API_URLS = {
   EXPENSE: {
