@@ -41,16 +41,15 @@ export default function Page() {
         getAllExpenses();
     }, []);
 
-    const calculateTotalBalance = () => {
-        return data.reduce((total, expense) => {
-            const amount = parseFloat(expense.amount);
-            if (isNaN(amount)) return total;
+    const totalCredit = data?.reduce((acc, item) => {
+        return item.payment_type === "credit" ? acc + Number(item.amount) : acc;
+    }, 0) || 0;
 
-            return expense.payment_type === 'credit'
-                ? total + amount
-                : total - amount;
-        }, 0);
-    };
+    const totalDebit = data?.reduce((acc, item) => {
+        return item.payment_type === "debit" ? acc + Number(item.amount) : acc;
+    }, 0) || 0;
+    const balance = totalCredit - totalDebit;
+
 
     const calculateMonthlyExpense = () => {
         const now = new Date();
@@ -83,60 +82,71 @@ export default function Page() {
         }, 0);
     };
 
-
-
     return (
-        <main className="p-4 md:p-8 max-w-[1200px] w-full m-auto min-h-screen flex flex-col items-center justify-start relative">
-            <div className="flex justify-between items-center w-full mb-5">
-                <h1 className="text-2xl font-semibold mb-6">All Expenses</h1>
-                <Link href={"/"} className='w-[120px] h-[36px] text-[14px] flex items-center justify-center rounded-[5px] cursor-pointer  bg-white text-black border-[1px] border-gray-400'>Go Home</Link>
+        <main className="px-4 pb-[40px] md:px-8 max-w-[1200px] w-full m-auto min-h-screen flex flex-col items-center justify-start relative">
+            <div className="flex justify-between items-center w-full border-b-[1px] border-gray-300 py-[15px] mb-[15px]">
+                <h1 className="text-2xl font-semibold">All Expenses</h1>
+                <Link href={"/"} className='w-[100px] h-[35px] text-[14px] flex items-center justify-center rounded-[5px] cursor-pointer  bg-white text-black border-[1px] border-gray-400'>Add +</Link>
             </div>
 
-            <div className="flex flex-col md:flex-row justify-between items-center w-full mb-5">
-                <h2 className="text-xl font-medium mb-4">
-                    Total Balance: ₹{calculateTotalBalance().toFixed(2)}
+            <div className="flex flex-col md:flex-row justify-between  md:items-center gap-[6px] w-full mb-5">
+                <h2 className=" text-md md:text-xl font-semibold">
+                    Balance: ₹{balance.toFixed(2)}
                 </h2>
-                <h3 className="text-lg font-normal">
-                    This Months Expense: ₹{calculateMonthlyExpense().toFixed(2)}
+                <h3 className="text-md md:text-lg font-normal">
+                    Monthly Expense: ₹{calculateMonthlyExpense().toFixed(2)}
                 </h3>
             </div>
 
             {isLoading ? (
                 <p className="text-gray-500">Loading...</p>
             ) : (
-                <div className="w-full max-h-screen min-h-fit overflow-y-auto overflow-x-auto rounded-lg shadow-md">
-                    <table className="min-w-full border border-gray-300 text-sm text-left">
-                        <thead className="bg-gray-200 text-gray-700 uppercase">
+                <div className="w-full max-h-screen min-h-fit overflow-y-auto overflow-x-auto rounded-lg shadow-md ">
+                    <table className="min-w-full border border-gray-300 text-sm text-left text-nowrap">
+                        <thead className="bg-gray-200 text-gray-700 uppercase text-[13px] ">
                             <tr>
                                 <th className="px-4 py-2">ID</th>
                                 <th className="px-4 py-2">Amount</th>
+                                <th className="px-4 py-2">Payment Type</th>
                                 <th className="px-4 py-2">Category</th>
                                 <th className="px-4 py-2">Description</th>
-                                <th className="px-4 py-2">Date</th>
-                                <th className="px-4 py-2">Time</th>
+                                <th className="px-4 py-2">Date & Time</th>
+                                {/* <th className="px-4 py-2">Time</th> */}
                                 <th className="px-4 py-2">Payment Mode</th>
-                                <th className="px-4 py-2">Payment Type</th>
                                 <th className="px-4 py-2">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {data.length === 0 ? (
-                                <tr>
+                                <tr className="min-h-[50px]">
                                     <td colSpan={8} className="text-center py-4 text-gray-500">
                                         No expenses found.
                                     </td>
                                 </tr>
                             ) : (
-                                data.map((item) => (
-                                    <tr key={item._id} className="border-t border-gray-200">
-                                        <td className="px-4 py-2">{item._id}</td>
+                                data.map((item, index) => (
+                                    <tr key={item._id} className="border-t border-gray-200 h-[80px]">
+                                        <td className="px-4 py-2">{index + 1}</td>
                                         <td className="px-4 py-2">₹{item.amount}</td>
-                                        <td className="px-4 py-2">{item.category}</td>
+                                        <td className="px-4 py-2">
+                                            {
+                                                item.payment_type === "credit" ?
+                                                    <div className="w-[65px] h-[28px] cursor-pointer text-[13px] bg-green-100 rounded-full flex items-center justify-center">{item.payment_type}</div>
+                                                    :
+                                                    <div className="w-[65px] h-[28px] cursor-pointer text-[13px] bg-red-100 rounded-full flex items-center justify-center">{item.payment_type}</div>
+                                            }
+                                        </td>
+                                        <td className="px-4 py-2">{item.category || "-"}</td>
                                         <td className="px-4 py-2">{item.description}</td>
-                                        <td className="px-4 py-2">{item.date || "-"}</td>
-                                        <td className="px-4 py-2">{item.time || "-"}</td>
-                                        <td className="px-4 py-2">{item.payment_mode}</td>
-                                        <td className="px-4 py-2">{item.payment_type}</td>
+                                        <td>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[14px] font-medium ">{item.date || "-"}</span>
+                                                <span className="text-[13px] ">{item.time || "-"}</span>
+                                            </div>
+                                        </td>
+                                        {/* <td className="px-4 py-2">{item.date || "-"}</td>
+                                        <td className="px-4 py-2">{item.time || "-"}</td> */}
+                                        <td className="px-4 py-2">{item.payment_mode || "-"}</td>
                                         <td className="px-4 py-2">Coming Soon...</td>
                                     </tr>
                                 ))

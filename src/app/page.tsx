@@ -39,7 +39,7 @@ export default function Home() {
   }
 
   return (
-    <main className="p-4 md:p-8 max-w-[500px] w-full m-auto min-h-screen flex flex-col items-center justify-between relative">
+    <main className="p-4 md:p-8 max-w-[500px] w-full m-auto min-h-[100lvh] flex flex-col items-center justify-between relative">
 
       <h1 className="text-2xl font-semibold mb-4">Add Expense</h1>
       <div className='w-full'>
