@@ -23,7 +23,9 @@ export default function Home() {
         body: state.transcript
       })
       if (response.ok) {
+
         alert("Success in adding.")
+        window.location.href = "/list"
       }
     } catch (err) {
       alert("Something went wrong.")
@@ -39,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <main className="p-4 md:p-8 max-w-[500px] w-full m-auto min-h-[100lvh] flex flex-col items-center justify-between relative">
+    <main className="px-4 md:px-8 py-[50px] max-w-[500px] w-full m-auto min-h-[100dvh] flex flex-col items-center justify-between relative">
 
       <h1 className="text-2xl font-semibold mb-4">Add Expense</h1>
       <div className='w-full'>

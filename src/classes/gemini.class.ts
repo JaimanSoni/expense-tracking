@@ -86,6 +86,7 @@ Parse this sentence into the following JSON format. Use default values only when
 8. ABSOLUTELY DO NOT include any markdown, \`\`\`json, backticks, quotes, or explanation.
 9. Return ONLY the JSON object. No intro, no outro, no comments, no special characters, no key renaming.\
 10. Auto correct some of the mistakes in making the descrition.
+11. Date format should be Date Month Year, for eg 4 August, 2025
 
 
 ---

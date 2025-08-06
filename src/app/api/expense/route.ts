@@ -1,5 +1,7 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { getExpenseCollection, Expense } from "@/models/expense";
+import { ObjectId } from "mongodb";
+import { NextRequest } from "next/server";
 
 export async function GET() {
   const db = await connectToDatabase();
@@ -15,26 +17,26 @@ export async function POST(req: Request) {
   const db = await connectToDatabase();
   const expenses = getExpenseCollection(db);
 
-  // Get current time in IST
+  // Get current IST time
   const now = new Date();
   const indianTime = new Date(
     now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
   );
 
-  // Extract formatted date and time
-  const formattedDate = indianTime.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }); // e.g. "5 August, 2025"
+  // Manually format date to "6 August, 2025"
+  const day = indianTime.getDate();
+  const month = indianTime.toLocaleString("default", { month: "long" });
+  const year = indianTime.getFullYear();
+  const formattedDate = `${day} ${month}, ${year}`;
 
+  // Format time like "10:30 AM"
   const formattedTime = indianTime.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
-  }); // e.g. "10:30 AM"
+  });
 
-  // Fallback if date/time missing
+  // Use passed date/time if available, else use generated ones
   const finalDate = data.date?.trim() ? data.date : formattedDate;
   const finalTime = data.time?.trim() ? data.time : formattedTime;
 
@@ -42,8 +44,43 @@ export async function POST(req: Request) {
     ...data,
     date: finalDate,
     time: finalTime,
-    created_at: indianTime, // store IST time
+    created_at: indianTime,
   });
 
   return Response.json({ insertedId: result.insertedId });
+}
+
+// PATCH: Update expense by ID
+export async function PATCH(req: NextRequest) {
+  const data = await req.json();
+  const db = await connectToDatabase();
+  const expenses = getExpenseCollection(db);
+
+  const dataToSend = {
+    amount: data.amount,
+    category: data.category,
+    description: data.description,
+    payment_mode: data.payment_mode,
+    payment_type: data.payment_type,
+    date: data.date,
+    time: data.time,
+  };
+
+  const result = await expenses.updateOne(
+    { _id: new ObjectId(data._id) },
+    { $set: { ...dataToSend } }
+  );
+
+  return Response.json({ modifiedCount: result.modifiedCount });
+}
+
+// DELETE: Delete expense by ID
+export async function DELETE(req: NextRequest) {
+  const data = await req.json();
+  const db = await connectToDatabase();
+  const expenses = getExpenseCollection(db);
+
+  const result = await expenses.deleteOne({ _id: new ObjectId(data.id) });
+
+  return Response.json({ deletedCount: result.deletedCount });
 }
