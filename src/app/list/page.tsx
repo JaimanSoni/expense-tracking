@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { API_URLS, CATEGORIES, MONTHS, PAYMENT_MODES, PAYMENT_TYPES } from "../constants";
 import Link from "next/link";
-import { FaRegTrashCan } from "react-icons/fa6";
+import { FaEye, FaEyeSlash, FaRegTrashCan } from "react-icons/fa6";
 
 
 
@@ -26,6 +26,10 @@ export default function Page() {
     const [modal, setModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [openedData, setOpenedData] = useState<Expense | null | undefined>(null)
+    const [showBalance, setShowBalance] = useState(false)
+    const [balanceModal, setBalanceModal] = useState(false)
+
+    const [userSecret, setUserSecret] = useState("")
 
 
     // filters
@@ -316,6 +320,27 @@ export default function Page() {
     };
 
 
+    const handleBalanceModalClick = () => {
+        if (showBalance === true) {
+            setShowBalance(false)
+        } else {
+
+            setBalanceModal(true);
+        }
+    }
+    const closeBalanceModal = () => {
+        setBalanceModal(false);
+    }
+
+    const checkSecret = () => {
+        const SECRET = process.env.NEXT_PUBLIC_BALANCE_SECRET;
+        if (SECRET === userSecret) {
+            setShowBalance(true);
+            setBalanceModal(false);
+            setUserSecret("")
+        }
+    }
+
     return (
         <main className=" bg-slate-50 px-4 pb-[40px] md:px-8 max-w-[1200px] w-full m-auto min-h-[100dvh] flex flex-col items-center justify-start relative">
             <div className="flex justify-between items-center w-full border-b-[1px] border-gray-300 py-[15px] mb-[15px]">
@@ -326,16 +351,33 @@ export default function Page() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px] md:gap-[20px] w-full mb-5">
                 <div className="w-full py-3 md:py-4 px-4 h-[95px] md:h-[130px] rounded-[15px] shadow-md bg-white flex flex-col justify-between">
                     <div className=" text-[13px] md:text-[17px] font-normal">Total Balance</div>
-                    <div className=" text-[20px] md:text-[25px] font-medium text-green-600">
-                        ₹{balance.toFixed(2)}
+                    <div className=" text-[20px] md:text-[25px] font-medium text-green-600 flex items-center justify-between">
+                        {
+                            showBalance ? "₹" + balance.toFixed(2) : "*******"
+                        }
+                        <div onClick={() => { handleBalanceModalClick() }}>
+
+                            {
+                                showBalance ?
+                                    <div className="cursor-pointer">
+                                        <FaEyeSlash size={18} />
+                                    </div>
+                                    :
+                                    <div className="cursor-pointer">
+
+                                        <FaEye size={18} />
+                                    </div>
+
+                            }
+                        </div>
                     </div>
                 </div>
-                <div className="w-full py-3 md:py-4 px-4 h-[95px] md:h-[130px] rounded-[15px] shadow-md bg-white flex flex-col justify-between">
+                {/* <div className="w-full py-3 md:py-4 px-4 h-[95px] md:h-[130px] rounded-[15px] shadow-md bg-white flex flex-col justify-between">
                     <div className=" text-[13px] md:text-[17px] font-normal">This Month Earnings</div>
                     <div className=" text-[20px] md:text-[25px] font-medium text-green-600">
                         Working...
                     </div>
-                </div>
+                </div> */}
                 <div className="w-full py-3 md:py-4 px-4 h-[95px] md:h-[130px] rounded-[15px] shadow-md bg-white flex flex-col justify-between">
                     <div className=" text-[13px] md:text-[17px] font-normal">This Month Expense</div>
                     <div className=" text-[20px] md:text-[25px] font-medium text-red-600">
@@ -431,11 +473,6 @@ export default function Page() {
                 >
                     Clear Filters
                 </button>
-
-
-
-
-
             </div>
 
 
@@ -630,6 +667,41 @@ export default function Page() {
                     </div>
                 </div>
             )}
+
+            <div
+                className={` transition-all duration-200 ${balanceModal ? "opacity-100" : "opacity-0 pointer-events-none"} fixed inset-0 z-50 flex items-center justify-center bg-[#64646460] bg-opacity-30 backdrop-blur-sm`}
+            >
+                <div className="bg-white w-[350px] p-6 rounded-2xl shadow-lg relative">
+                    <button
+                        onClick={closeBalanceModal}
+                        className="absolute top-3 right-3 text-gray-600 hover:text-black"
+                    >
+                        ✕
+                    </button>
+
+                    <h2 className="text-xl font-medium mb-4">Enter Your Secret to view balance.</h2>
+
+                    <div className="flex justify-end gap-3">
+                        <form action="" className="space-y-4">
+                            <input autoFocus={true} type="password" className="w-full border rounded px-3 py-2" value={userSecret} onChange={(e) => {
+                                setUserSecret(e.target.value)
+                            }} placeholder="Secret" />
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    checkSecret()
+                                }}
+                                className="px-4 py-2 bg-black cursor-pointer text-white rounded"
+                            >
+                                Submit
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
+
 
         </main>
     );
