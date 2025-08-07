@@ -349,7 +349,7 @@ export default function Page() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px] md:gap-[20px] w-full mb-5">
-                <div className="w-full py-3 md:py-4 px-4 h-[95px] md:h-[130px] rounded-[15px] shadow-md bg-white flex flex-col justify-between">
+                <div className="w-full col-span-2 md:col-span-2 py-3 md:py-4 px-4 h-[95px] md:h-[130px] rounded-[15px] shadow-md bg-white flex flex-col justify-between">
                     <div className=" text-[13px] md:text-[17px] font-normal">Total Balance</div>
                     <div className=" text-[20px] md:text-[25px] font-medium text-green-600 flex items-center justify-between">
                         {
