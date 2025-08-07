@@ -44,7 +44,7 @@ export default function Page() {
 
             if (!response.ok) throw new Error("Failed to fetch expenses.");
 
-            const responseData = await response.json();
+            const responseData: Expense[] = await response.json();
 
             // Custom parser for "6 August, 2025" and "10:30 AM"
             const parseDateTime = (dateStr: string, timeStr: string) => {
@@ -54,7 +54,7 @@ export default function Page() {
             };
 
             // Sort by combined date and time
-            const sorted = responseData.sort((a: any, b: any) => {
+            const sorted: Expense[] = responseData.sort((a, b) => {
                 const dateTimeA = parseDateTime(a.date, a.time);
                 const dateTimeB = parseDateTime(b.date, b.time);
                 return dateTimeB.getTime() - dateTimeA.getTime(); // latest first
