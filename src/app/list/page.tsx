@@ -143,13 +143,14 @@ export default function Page() {
                 filtered = filtered.filter(item => {
                     if (!item.date) return false;
 
-                    // Convert "5 August, 2025" → Date object
-                    const parsedDate = new Date(`${item.date} IST`);
-                    const itemMonth = parsedDate.toLocaleString('en-IN', { month: 'long' });
+                    // Split the date string: "5 August, 2025" or "5 August 2025"
+                    const parts = item.date.replace(",", "").split(" ");
+                    const month = parts[1]; // parts[1] is the month
 
-                    return itemMonth === selectedMonth;
+                    return month === selectedMonth;
                 });
             }
+
 
             // if (selectedDate) {
             //     filtered = filtered.filter(item => {
