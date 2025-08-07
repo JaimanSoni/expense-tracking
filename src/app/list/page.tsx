@@ -37,7 +37,6 @@ export default function Page() {
 
     const [formData, setFormData] = useState<Expense | null>(null);
 
-
     const getAllExpenses = async () => {
         try {
             setLoading(true);
@@ -46,8 +45,23 @@ export default function Page() {
             if (!response.ok) throw new Error("Failed to fetch expenses.");
 
             const responseData = await response.json();
-            setData(responseData);
-            setFilteredData(responseData);
+
+            // Custom parser for "6 August, 2025" and "10:30 AM"
+            const parseDateTime = (dateStr: string, timeStr: string) => {
+                const [day, month, year] = dateStr.split(" ");
+                const formatted = `${day} ${month} ${year} ${timeStr}`;
+                return new Date(formatted);
+            };
+
+            // Sort by combined date and time
+            const sorted = responseData.sort((a: any, b: any) => {
+                const dateTimeA = parseDateTime(a.date, a.time);
+                const dateTimeB = parseDateTime(b.date, b.time);
+                return dateTimeB.getTime() - dateTimeA.getTime(); // latest first
+            });
+
+            setData(sorted);
+            setFilteredData(sorted);
         } catch (err) {
             alert("Something went wrong.");
             console.error(err);
@@ -55,6 +69,8 @@ export default function Page() {
             setLoading(false);
         }
     };
+
+
 
     useEffect(() => {
         getAllExpenses();
@@ -566,10 +582,10 @@ export default function Page() {
                                 />
                             </div>
                             <div className="flex w-full items-center justify-center self-end gap-[5px]">
-                                <button type="submit" className="w-full bg-black text-white rounded py-2 cursor-pointer">
-                                    Save Changes
+                                <button type="submit" className="w-full bg-black  text-white rounded py-2 cursor-pointer">
+                                    Save
                                 </button>
-                                <div onClick={() => handleModalClick(formData._id, "delete")} className="py-2 cursor-pointer w-[40px] h-[40px] flex items-center justify-center bg-red-200 hover:bg-red-300 rounded">
+                                <div onClick={() => handleModalClick(formData._id, "delete")} className="py-2 cursor-pointer w-[50px] h-[40px] flex items-center justify-center bg-red-200 hover:bg-red-300 rounded">
                                     <FaRegTrashCan size={15} />
                                 </div>
                             </div>
@@ -581,9 +597,9 @@ export default function Page() {
             {/* Delete Confirmation Modal */}
             {deleteModal && openedData && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#64646460] backdrop-blur-sm bg-opacity-30 backdrop-blur-sm"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#64646460] bg-opacity-30 backdrop-blur-sm"
                 >
-                    <div className="bg-white max-w-sm w-full p-6 rounded-2xl shadow-lg relative">
+                    <div className="bg-white w-[350px] p-6 rounded-2xl shadow-lg relative">
                         <button
                             onClick={closeDeleteModal}
                             className="absolute top-3 right-3 text-gray-600 hover:text-black"
