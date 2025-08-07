@@ -15,6 +15,8 @@ export default function VoiceInput() {
         dispatch({ type: "SET_TRANSCRIPT", payload: "" });
         dispatch({ type: "STOP_LISTENING" });
         dispatch({ type: "IS_LOADING", payload: false });
+        dispatch({ type: "MANUAL_TRANSCRIPT", payload: "" });
+        dispatch({ type: "MANUAL", payload: false });
     }
 
     return (

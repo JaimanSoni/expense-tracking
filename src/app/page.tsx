@@ -49,6 +49,11 @@ export default function Home() {
           <VoiceInput />
         </div>
 
+        <div className='w-full flex gap-3'>
+          <input className="w-full border rounded px-3 py-2" type="text" value={state.manual_transcript} placeholder='Write something' onChange={(e) => { dispatch({ type: "MANUAL_TRANSCRIPT", payload: e.target.value }); }} />
+          <button type='button' onClick={() => { dispatch({ type: "MANUAL", payload: true }); }} className='w-[70px] bg-black rounded text-white cursor-pointer'>Ok</button>
+        </div>
+
         <div className="my-6 p-4 bg-slate-50 rounded shadow-md w-full">
           <div className='w-full min-h-[150px] h-fit max-h-[350px] overflow-scroll  '>
             {state.transcript ? <>

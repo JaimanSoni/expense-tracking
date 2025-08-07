@@ -21,13 +21,17 @@ interface State {
     listening: boolean;
     isLoading: boolean;
     transcript: string;
+    manual: boolean;
+    manual_transcript: string;
 }
 
 type Action =
     | { type: 'START_LISTENING' }
     | { type: 'STOP_LISTENING' }
     | { type: 'SET_TRANSCRIPT'; payload: string }
-    | { type: 'IS_LOADING'; payload: boolean };
+    | { type: 'IS_LOADING'; payload: boolean }
+    | { type: 'MANUAL'; payload: boolean }
+    | { type: 'MANUAL_TRANSCRIPT'; payload: string };
 
 interface ISpeechRecognition extends EventTarget {
     start(): void;
@@ -83,6 +87,8 @@ const initialState: State = {
     listening: false,
     isLoading: false,
     transcript: '',
+    manual: false,
+    manual_transcript: "",
 };
 
 function voiceReducer(state: State, action: Action): State {
@@ -95,6 +101,10 @@ function voiceReducer(state: State, action: Action): State {
             return { ...state, transcript: action.payload };
         case 'IS_LOADING':
             return { ...state, isLoading: action.payload };
+        case 'MANUAL':
+            return { ...state, manual: action.payload };
+        case 'MANUAL_TRANSCRIPT':
+            return { ...state, manual_transcript: action.payload };
         default:
             return state;
     }
@@ -121,6 +131,21 @@ const VoiceContext = createContext<{
 export const VoiceProvider = ({ children }: { children: ReactNode }) => {
     const [state, dispatch] = useReducer(voiceReducer, initialState);
     const recognitionRef = useRef<ISpeechRecognition | null>(null);
+
+    useEffect(() => {
+        console.log("object")
+        const manualRequest = async () => {
+            if (state.manual === true) {
+                dispatch({ type: 'IS_LOADING', payload: true });
+                dispatch({ type: 'SET_TRANSCRIPT', payload: "" });
+                const processedData = await gemini.processInput(state.manual_transcript);
+                dispatch({ type: 'SET_TRANSCRIPT', payload: processedData });
+                dispatch({ type: 'MANUAL_TRANSCRIPT', payload: "" });
+                dispatch({ type: 'IS_LOADING', payload: false });
+            }
+        }
+        manualRequest()
+    }, [state.manual])
 
     useEffect(() => {
         const SpeechRecognition = getSpeechRecognition();
