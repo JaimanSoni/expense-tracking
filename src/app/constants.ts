@@ -1,5 +1,5 @@
-// const BASE_API_URL = "http://localhost:3000";
-const BASE_API_URL = "https://expense-tracking-flax.vercel.app";
+export const BASE_API_URL = "http://localhost:3000";
+// const BASE_API_URL = "https://expense-tracking-flax.vercel.app";
 
 export const API_URLS = {
   EXPENSE: {
@@ -13,11 +13,15 @@ export const API_URLS = {
   },
 };
 
+export const BANKS = ["SBI", "DCB", "Axis"];
+
 export const CATEGORIES = [
+  "Savings",
   "Salary",
   "Music",
   "Relative",
   "Extra Work",
+  "Bank Transfer",
   "Freelancing",
   "Trading",
   "Travel",

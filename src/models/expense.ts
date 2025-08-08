@@ -9,6 +9,7 @@ export interface Expense {
   time?: string;
   payment_mode: string;
   payment_type: "debit" | "credit";
+  bank: string;
   created_at: Date;
 }
 

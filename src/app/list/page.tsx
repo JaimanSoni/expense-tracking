@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { API_URLS, CATEGORIES, MONTHS, PAYMENT_MODES, PAYMENT_TYPES } from "../constants";
+import { API_URLS, BANKS, BASE_API_URL, CATEGORIES, MONTHS, PAYMENT_MODES, PAYMENT_TYPES } from "../constants";
 import Link from "next/link";
 import { FaEye, FaEyeSlash, FaRegTrashCan } from "react-icons/fa6";
 
@@ -17,6 +17,7 @@ interface Expense {
     time: string;
     payment_mode: string;
     payment_type: string;
+    bank: string;
 }
 
 export default function Page() {
@@ -30,7 +31,12 @@ export default function Page() {
     const [balanceModal, setBalanceModal] = useState(false)
 
     const [userSecret, setUserSecret] = useState("")
+    const [offset, setOffset] = useState(0)
 
+    const limit = 10;
+
+    const [bank, setBank] = useState("");
+    const [isLoaded, setLoaded] = useState(false);
 
     // filters
     const [selectedCategory, setSelectedCategory] = useState("");
@@ -44,7 +50,8 @@ export default function Page() {
     const getAllExpenses = async () => {
         try {
             setLoading(true);
-            const response = await fetch(API_URLS.EXPENSE.GET);
+
+            const response = await fetch(`${BASE_API_URL}/api/expense?bank=${bank}&offset=${offset}&limit=${limit}`);
 
             if (!response.ok) throw new Error("Failed to fetch expenses.");
 
@@ -61,11 +68,16 @@ export default function Page() {
             const sorted: Expense[] = responseData.sort((a, b) => {
                 const dateTimeA = parseDateTime(a.date, a.time);
                 const dateTimeB = parseDateTime(b.date, b.time);
-                return dateTimeB.getTime() - dateTimeA.getTime(); // latest first
+                return dateTimeB.getTime() - dateTimeA.getTime();
             });
+            if (data.length === 0) {
+                setData(sorted);
+                setFilteredData(sorted);
+            } else {
+                setData([...data, ...sorted]);
+                setFilteredData([...filteredData, ...sorted]);
+            }
 
-            setData(sorted);
-            setFilteredData(sorted);
         } catch (err) {
             alert("Something went wrong.");
             console.error(err);
@@ -74,11 +86,46 @@ export default function Page() {
         }
     };
 
+    type localData = {
+        actualData: Expense[];
+        bank: string
+    }
 
+    const setDataToLocal = (sorted: Expense[]) => {
+        localStorage.setItem("data", JSON.stringify({ bank: bank, actualData: sorted }))
+    }
+    const getDataFromLocal = () => {
+        const actualData: string | null = localStorage.getItem("data");
+        let parsedActualData: localData;
+        if (actualData) {
+            parsedActualData = JSON.parse(actualData);
+            setData(parsedActualData.actualData);
+            setFilteredData(parsedActualData.actualData);
+
+            setBank(parsedActualData.bank)
+        }
+    }
 
     useEffect(() => {
-        getAllExpenses();
-    }, []);
+        // const init = async () => {
+        //     if (!isLoaded) {
+        //         if (localStorage.getItem("data")) {
+        //             getDataFromLocal();
+        //         } else {
+        //             await getAllExpenses();
+        //         }
+        //         setLoaded(true);
+        //     } else {
+        //         await getAllExpenses();
+        //     }
+        // };
+        // init();
+        const init = async () => {
+            await getAllExpenses()
+        }
+        init();
+    }, [bank, offset]);
+
 
     const totalCredit = data?.reduce((acc, item) => {
         return item.payment_type === "credit" ? acc + Number(item.amount) : acc;
@@ -141,37 +188,16 @@ export default function Page() {
 
             if (selectedMonth) {
                 filtered = filtered.filter(item => {
-                    if (!item.date) return false;
-
-                    // Split the date string: "5 August, 2025" or "5 August 2025"
-                    const parts = item.date.replace(",", "").split(" ");
-                    const month = parts[1]; // parts[1] is the month
-
+                    const [day, month] = item.date.replace(",", "").split(" ");
                     return month === selectedMonth;
                 });
             }
-
-
-            // if (selectedDate) {
-            //     filtered = filtered.filter(item => {
-            //         if (!item.date) return false;
-
-            //         // Convert "5 August, 2025" to "YYYY-MM-DD"
-            //         const parsedDate = new Date(`${item.date} IST`);
-            //         const itemFormatted = parsedDate.toLocaleDateString("en-CA", {
-            //             timeZone: "Asia/Kolkata",
-            //         });
-            //         console.log(selectedDate)
-            //         console.log(itemFormatted)
-            //         return itemFormatted === selectedDate;
-            //     });
-            // }
 
             setFilteredData(filtered);
         };
 
         applyFilters();
-    }, [selectedCategory, selectedPaymentType, selectedPaymentMode, selectedMonth, selectedDate, data]);
+    }, [selectedCategory, selectedPaymentType, selectedPaymentMode, selectedMonth]);
 
     const handleModalClick = (id: string, type: string) => {
         const single = data.find((item) => item._id === id);
@@ -256,6 +282,7 @@ export default function Page() {
                 payment_type: formData?.payment_type,
                 date: formattedDate, // e.g. "5 August, 2025"
                 time: formattedTime, // e.g. "2:30 PM"
+                bank: formData?.bank
             };
 
             console.log("Sending payload:", payload);
@@ -275,10 +302,16 @@ export default function Page() {
 
             if (responseData.modifiedCount > 0) {
                 alert("Update successful");
-                window.location.reload();
+                setModal(false);
+                setOpenedData(null);
+                const updated = data.map(d => d._id === formData?._id ? { ...formData!, date: payload.date, time: payload.time } : d);
+                setData(updated);
+                setFilteredData(updated);
+                setDataToLocal(updated);
             } else {
                 alert("No changes were made.");
             }
+
         } catch (err) {
             alert("Something went wrong");
             console.error("Error updating data:", err);
@@ -342,11 +375,45 @@ export default function Page() {
         }
     }
 
+
+    const loadMore = async () => {
+        if (!isLoading) {
+            setOffset((prev) => prev + limit);
+        }
+    }
+
+
     return (
         <main className=" bg-slate-50 px-4 pb-[40px] md:px-8 max-w-[1200px] w-full m-auto min-h-[100dvh] flex flex-col items-center justify-start relative">
             <div className="flex justify-between items-center w-full border-b-[1px] border-gray-300 py-[15px] mb-[15px]">
-                <h1 className="text-2xl font-semibold">All Expenses</h1>
-                <Link href={"/"} className='w-[100px] h-[35px] text-[14px] flex items-center justify-center rounded-[5px] cursor-pointer  bg-white text-black border-[1px] border-gray-400'>Add +</Link>
+                <div>
+
+                    <h1 className="text-2xl font-semibold">All Expenses</h1>
+                    <div className="w-full">
+                        <select
+                            value={bank}
+                            onChange={(e) => {
+                                setBank(e.target.value);
+                                localStorage.removeItem("data");
+                                setData([])
+                                setFilteredData([])
+                                setLoaded(false)
+                            }}
+                            className="p-1 border rounded w-full"
+                        >
+                            <option value="">All Banks</option>
+                            {BANKS.map((item, index) => (
+                                <option key={index} value={item}>
+                                    {item}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                <div className="flex gap-3">
+                    <button className="w-[65px] h-[35px] text-[14px] flex items-center justify-center rounded-[5px] cursor-pointer  bg-white text-black border-[1px] border-gray-400" onClick={() => { localStorage.clear(); window.location.reload() }}>Clear</button>
+                    <Link href={"/"} className='w-[65px] h-[35px] text-[14px] flex items-center justify-center rounded-[5px] cursor-pointer  bg-white text-black border-[1px] border-gray-400'>Add +</Link>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px] md:gap-[20px] w-full mb-5">
@@ -480,58 +547,71 @@ export default function Page() {
             {isLoading ? (
                 <p className="text-gray-500">Loading...</p>
             ) : (
-                <div className="w-full max-h-screen min-h-fit overflow-y-auto overflow-x-auto rounded-lg shadow-md ">
-                    <table className="min-w-full border border-gray-300 text-sm text-left text-nowrap">
-                        <thead className="bg-gray-200 text-gray-700 uppercase text-[13px] ">
-                            <tr>
-                                <th className="px-4 py-2">ID</th>
-                                <th className="px-4 py-2">Amount</th>
-                                <th className="px-4 py-2">Payment Type</th>
-                                <th className="px-4 py-2">Category</th>
-                                <th className="px-4 py-2">Description</th>
-                                <th className="px-4 py-2">Date & Time</th>
-                                {/* <th className="px-4 py-2">Time</th> */}
-                                <th className="px-4 py-2">Payment Mode</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredData.length === 0 ? (
-                                <tr className="min-h-[50px]">
-                                    <td colSpan={8} className="text-center py-4 text-gray-500">
-                                        No expenses found.
-                                    </td>
+                <>
+                    <div className="w-full max-h-screen min-h-fit overflow-y-auto overflow-x-auto rounded-lg shadow-md ">
+                        <table className="min-w-full border border-gray-300 text-sm text-left text-nowrap">
+                            <thead className="bg-gray-200 text-gray-700 uppercase text-[13px] ">
+                                <tr>
+                                    <th className="px-4 py-2">ID</th>
+                                    <th className="px-4 py-2">Amount</th>
+                                    <th className="px-4 py-2">Payment Type</th>
+                                    <th className="px-4 py-2">Category</th>
+                                    <th className="px-4 py-2">Description</th>
+                                    <th className="px-4 py-2">Payment Mode</th>
+                                    <th className="px-4 py-2">Bank Account</th>
+                                    <th className="px-4 py-2">Date & Time</th>
+                                    {/* <th className="px-4 py-2">Time</th> */}
                                 </tr>
-                            ) : (
-                                filteredData.map((item, index) => (
-                                    <tr onClick={() => handleModalClick(item._id, "form")} key={item._id} className="border-t border-gray-200 hover:bg-gray-100 cursor-pointer h-[80px]">
-                                        <td className="px-4 py-2">{index + 1}</td>
-                                        <td className="px-4 py-2">₹{item.amount}</td>
-                                        <td className="px-4 py-2">
-                                            {
-                                                item.payment_type === "credit" ?
-                                                    <div className="w-[65px] h-[28px] cursor-pointer text-[13px] bg-green-100 rounded-full flex items-center justify-center">{item.payment_type}</div>
-                                                    :
-                                                    <div className="w-[65px] h-[28px] cursor-pointer text-[13px] bg-red-100 rounded-full flex items-center justify-center">{item.payment_type}</div>
-                                            }
+                            </thead>
+                            <tbody>
+                                {filteredData.length === 0 ? (
+                                    <tr className="min-h-[50px]">
+                                        <td colSpan={8} className="text-center py-4 text-gray-500">
+                                            No expenses found.
                                         </td>
-                                        <td className="px-4 py-2">{item.category || "-"}</td>
-                                        <td className="px-4 py-2">{item.description}</td>
-                                        <td>
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[14px] font-medium ">{item.date || "-"}</span>
-                                                <span className="text-[13px] ">{item.time || "-"}</span>
-                                            </div>
-                                        </td>
-                                        {/* <td className="px-4 py-2">{item.date || "-"}</td>
-                                        <td className="px-4 py-2">{item.time || "-"}</td> */}
-                                        <td className="px-4 py-2">{item.payment_mode || "-"}</td>
-
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : (
+                                    filteredData.map((item, index) => (
+                                        <tr onClick={() => handleModalClick(item._id, "form")} key={item._id} className="border-t border-gray-200 hover:bg-gray-100 cursor-pointer h-[80px]">
+                                            <td className="px-4 py-2">{index + 1}</td>
+                                            <td className="px-4 py-2">₹{item.amount}</td>
+                                            <td className="px-4 py-2">
+                                                {
+                                                    item.payment_type === "credit" ?
+                                                        <div className="w-[65px] h-[28px] cursor-pointer text-[13px] bg-green-100 rounded-full flex items-center justify-center">{item.payment_type}</div>
+                                                        :
+                                                        <div className="w-[65px] h-[28px] cursor-pointer text-[13px] bg-red-100 rounded-full flex items-center justify-center">{item.payment_type}</div>
+                                                }
+                                            </td>
+                                            <td className="px-4 py-2">{item.category || "-"}</td>
+                                            <td className="px-4 py-2">{item.description}</td>
+                                            <td className="px-4 py-2">{item.payment_mode || "-"}</td>
+                                            <td className="px-4 py-2">{item.bank || "-"}</td>
+                                            <td>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[14px] font-medium ">{item.date || "-"}</span>
+                                                    <span className="text-[13px] ">{item.time || "-"}</span>
+                                                </div>
+                                            </td>
+                                            {/* <td className="px-4 py-2">{item.date || "-"}</td>
+                                        <td className="px-4 py-2">{item.time || "-"}</td> */}
+
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div onClick={loadMore} className="p-5 cursor-pointer ">
+                        {
+                            isLoading ?
+                                "Loading..."
+                                :
+                                "Load More..."
+                        }
+                    </div>
+                </>
+
             )}
 
             <div className={` ${modal ? "opacity-100" : "opacity-0 pointer-events-none"} transition-all duration-200 w-screen h-screen flex justify-center py-[50px] px-[15px] items-center fixed top-0 left-0 bg-[#64646460] backdrop-blur-sm`}>
@@ -542,9 +622,10 @@ export default function Page() {
                     {formData && (
                         <form
                             className="grid grid-cols-2 gap-4"
-                            onSubmit={() => {
-                                updateData();
-                                closeModal()
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                await updateData();
+                                closeModal();
                             }}
                         >
                             <div>
@@ -597,6 +678,18 @@ export default function Page() {
                                     onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
                                 >
                                     {PAYMENT_MODES.map((mode, i) => (
+                                        <option key={i} value={mode}>{mode}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm mb-1">Bank Account</label>
+                                <select
+                                    className="w-full border rounded px-3 py-2"
+                                    value={formData.bank}
+                                    onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
+                                >
+                                    {BANKS.map((mode, i) => (
                                         <option key={i} value={mode}>{mode}</option>
                                     ))}
                                 </select>

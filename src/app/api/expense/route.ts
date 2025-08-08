@@ -3,11 +3,27 @@ import { getExpenseCollection, Expense } from "@/models/expense";
 import { ObjectId } from "mongodb";
 import { NextRequest } from "next/server";
 
-export async function GET() {
+export async function GET(req: Request) {
   const db = await connectToDatabase();
   const expenses = getExpenseCollection(db);
 
-  const allExpenses = await expenses.find().sort({ date: -1 }).toArray();
+  const { searchParams } = new URL(req.url);
+  const bank = searchParams.get("bank");
+  const offset = parseInt(searchParams.get("offset") || "0", 10);
+  const limit = parseInt(searchParams.get("limit") || "10", 10);
+
+  let query = {};
+  if (bank && bank.trim() !== "") {
+    query = { bank };
+  }
+
+  const allExpenses = await expenses
+    .find(query)
+    .sort({ date: -1 }) // or use created_at if needed
+    .skip(offset)
+    .limit(limit)
+    .toArray();
+
   return Response.json(allExpenses);
 }
 
@@ -64,7 +80,9 @@ export async function PATCH(req: NextRequest) {
     payment_type: data.payment_type,
     date: data.date,
     time: data.time,
+    bank: data.bank,
   };
+  console.log(dataToSend);
 
   const result = await expenses.updateOne(
     { _id: new ObjectId(data._id) },
