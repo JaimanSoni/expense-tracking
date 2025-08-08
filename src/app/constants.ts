@@ -1,5 +1,5 @@
-export const BASE_API_URL = "http://localhost:3000";
-// const BASE_API_URL = "https://expense-tracking-flax.vercel.app";
+// export const BASE_API_URL = "http://localhost:3000";
+export const BASE_API_URL = "https://expense-tracking-flax.vercel.app";
 
 export const API_URLS = {
   EXPENSE: {
