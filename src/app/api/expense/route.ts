@@ -20,8 +20,8 @@ export async function GET(req: Request) {
   const allExpenses = await expenses
     .find(query)
     .sort({ date: -1 }) // or use created_at if needed
-    .skip(offset)
-    .limit(limit)
+    // .skip(offset)
+    // .limit(limit)
     .toArray();
 
   return Response.json(allExpenses);
